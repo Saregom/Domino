@@ -2,7 +2,7 @@ import pygame, sys, random
 from tiles.typeTiles.simpleTile import SimpleTile
 from tiles.typeTiles.doubleTile import DoubleTile
 from tiles.typeTiles.tile import Tile
-from tiles.typeTiles.decorator.image_decorator import Image_decorator
+from tiles.typeTiles.tile_decorator.image_decorator import Image_decorator
 from typing import List
 
 #---------------------- Inicializacion pygame, ventana y atributos
