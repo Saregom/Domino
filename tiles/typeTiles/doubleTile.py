@@ -2,29 +2,21 @@ from .tile import *
 
 class DoubleTile(Tile):
     def __init__(self, side):
-        self.__side1 = side
-        self.__side2 = side
+        super().__init__()
+        self.side1 = side
+        self.side2 = side
+        self.set_image()
 
     def printTile(self):
-        print(self.__side1, self.__side2)
+        print(self.side1, self.side2)
+
+    def set_image(self):
+        self.image1 = pygame.image.load("assets/"+str(self.side1)+".jpg").convert_alpha()
+        self.image2 = pygame.image.load("assets/"+str(self.side1)+".jpg").convert_alpha()
+        
+        self.rect1 = self.image1.get_rect()
+        self.rect2 = self.image2.get_rect()
 
     #Metodo patron prototype
     def clone(self):
-        return DoubleTile(self.__side1)
-
-    #Getters, setters, actuan como los atributos, se llaman sin el parentesis
-    @property
-    def getSide1(self):
-        return self.__side1
-    
-    @getSide1.setter
-    def setSide1(self, side1):
-        self.__side1 = side1
-
-    @property
-    def getSide2(self):
-        return self.__side2
-    
-    @getSide2.setter
-    def setSide2(self, side2):
-        self.__side2 = side2
+        return DoubleTile(self.side1)
