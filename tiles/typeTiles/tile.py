@@ -10,6 +10,7 @@ class Tile(ABC):
         self.image2: pygame.surface
         self.rect1: pygame.Rect
         self.rect2: pygame.Rect
+        self.removed = False
         
 
     def set_position(self, x, y):
@@ -28,7 +29,8 @@ class Tile(ABC):
         screen.blit(self.image1, self.rect1)
         screen.blit(self.image2, self.rect2)
 
-    
+    def isClass(self, get_class):
+        return isinstance(self, get_class)
 
 
     @abstractmethod

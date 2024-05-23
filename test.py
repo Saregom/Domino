@@ -4,5 +4,5 @@ from tiles.typeTiles.doubleTile import DoubleTile
 
 if __name__ == "__main__":
     sdfa = [1]
-    print(sdfa[0])
+    print(sdfa.index)
     sdfa.remove[1]

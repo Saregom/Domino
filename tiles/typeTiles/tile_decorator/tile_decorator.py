@@ -7,6 +7,7 @@ class Tile_decorator(Tile):
         self.tile = tile
         self.side1 = self.tile.side1
         self.side2 = self.tile.side2
+        self.removed = self.tile.removed
 
     def printTile(self):
         print(self.side1, self.side2)
