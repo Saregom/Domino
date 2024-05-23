@@ -10,6 +10,7 @@ class Tile(ABC):
         self.image2: pygame.surface
         self.rect1: pygame.Rect
         self.rect2: pygame.Rect
+        
 
     def set_position(self, x, y):
         self.rect1.x = x
@@ -26,6 +27,9 @@ class Tile(ABC):
     def draw(self, screen):
         screen.blit(self.image1, self.rect1)
         screen.blit(self.image2, self.rect2)
+
+    
+
 
     @abstractmethod
     def set_image(self):
