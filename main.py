@@ -1,4 +1,4 @@
-import pygame, sys, random
+import pygame, sys, random, time
 from typing import List
 
 from tiles.factory.simpleTileFactory import SimpleTileFactory
@@ -25,7 +25,7 @@ fondo = Fondo.get_instance(WIDHT, HEIGHT)
 
 #---------------------- surface muestra opciones si se puede poner ficha en ambos lados
 srfc_side_options = pygame.Surface((200, 100))
-srfc_side_options_rect = srfc_side_options.get_rect(x=WIDHT/2-100, y=HEIGHT-240)
+srfc_side_options_rect = srfc_side_options.get_rect(x=WIDHT/2-100, y=HEIGHT-240) #Rect: Recibe las colisiones
 
 left_side_option = pygame.Surface((70, 30), pygame.SRCALPHA) #pygame.SRCALPHA: permita la opacidad
 left_side_option_rect = left_side_option.get_rect(x=srfc_side_options_rect.x+20, y=srfc_side_options_rect.y+57)
@@ -33,16 +33,17 @@ right_side_option = pygame.Surface((70, 30), pygame.SRCALPHA)
 right_side_option_rect = right_side_option.get_rect(x=srfc_side_options_rect.x+111, y=srfc_side_options_rect.y+57)
 
 #---------------------- eventos de tiempo
-TIEMPO_SEGUNDO = pygame.USEREVENT + 1
+SET_CENTER_TILE_TIME = pygame.USEREVENT + 1
+SET_BOT_TILE_TIME = pygame.USEREVENT + 2
 
 #---------------------- Clase juego, inicilizacion de variables
 class Game():
     def __init__(self):
         self.total_tiles = [] #Almacena las 28 fichas del domino
 
+        self.remaining_tiles = [] #Total de fichas sobrantes de la partida
         self.player_tiles = []
         self.bot_tiles = []
-        self.remaining_tiles = [] #Total de fichas sobrantes de la partida
 
         self.center_tile = []
         self.played_left_tiles = []
@@ -56,7 +57,7 @@ class Game():
         self.player_turn = "player"
         self.playing_turn = True
 
-        pygame.time.set_timer(TIEMPO_SEGUNDO, 1000) #evento se llama cada 3 segundos
+        pygame.time.set_timer(SET_CENTER_TILE_TIME, 1000) #evento se llama cada 3 segundos
 
 game = Game()
 
@@ -91,7 +92,7 @@ def take_tiles(list: List, tiles_to_take):
 #------- Verificar si hay una ficha doble, si no, vuelve a repartir fichas
 there_is_double = False
 while not there_is_double: 
-    print("Reparticion")
+    print("\nReparticion")
     game.player_tiles = []
     game.bot_tiles = []
     take_tiles(game.player_tiles, 7)
@@ -128,38 +129,42 @@ def show_tiles():
         tile.draw(screen)
 
     positions = [WIDHT/2-130, HEIGHT/2-25]
-    for tile in game.played_left_tiles:
-        tile.set_position(positions[0], positions[1])
-        set_correct_position(tile, game.left_sides, positions, "left")
+    for i, tile in  enumerate(game.played_left_tiles):
+        set_correct_position(tile, game.left_sides, positions, i, "left")
         tile.draw(screen)
 
-    positions = [WIDHT/2+30, HEIGHT/2-25]
-    for tile in game.played_right_tiles:
-        tile.set_position(positions[0], positions[1])
-        set_correct_position(tile, game.right_sides, positions, "right")
+    positions = [WIDHT/2+30, HEIGHT/2-25, 0]
+    for i, tile in enumerate(game.played_right_tiles):
+        set_correct_position(tile, game.right_sides, positions, i, "right")
         tile.draw(screen)
 
 #---------------------- Ubica las fichas en la posicion correcta en el tablero
-def set_correct_position(tile:Tile, list_sides:List, positions:List, side):
-    tile.set_horizontal()
+def set_correct_position(tile:Tile, list_sides:List, positions:List, cont, side):
     if side ==  "left":
-        if tile.side1 == list_sides[-1]: 
+        if tile.side1 == list_sides[cont]: 
             list_sides.append(tile.side2)
             positions[0] += 50
             tile.set_position(positions[0], positions[1])
             tile.set_horizontal_reverse()
+        else:
+            list_sides.append(tile.side1)
+            tile.set_position(positions[0], positions[1])
+            tile.set_horizontal()
     else:
-        if tile.side2 == list_sides[-1]: 
+        if tile.side2 == list_sides[cont]:
             list_sides.append(tile.side1)
             positions[0] += 50
             tile.set_position(positions[0], positions[1])
             tile.set_horizontal_reverse()
-    
+        else:
+            list_sides.append(tile.side2)
+            tile.set_position(positions[0], positions[1])
+            tile.set_horizontal()
 
    
 #---------------------- ubicar la ficha inicial (central)
 def set_center_tile(tiles_list):
-    pygame.time.set_timer(TIEMPO_SEGUNDO, 0) #detine el evento (0), para que se deje de llamar
+    pygame.time.set_timer(SET_CENTER_TILE_TIME, 0) #detine el evento (0), para que se deje de llamar
     tile_center:Tile
     biggest_center = 0
 
@@ -184,21 +189,23 @@ def set_center_tile(tiles_list):
 
     game.playing_turn = False
 
-def turn(tiles_list):
+#---------------------- Valida las fichas que se pueden jugar y las que no, las desabilita (baja la opacidad)
+def valid_tiles(tiles_list):
+    print("\n------Turno " + game.player_turn)
     for tile in tiles_list:
         tile.disable = True
+        if not tile.removed:
+            if tile.side1 == game.left_sides[-1] or tile.side2 == game.left_sides[-1]: 
+                print("valid at left")
+                tile.printTile()
+                tile.valid_at_left = True
+                tile.disable = False
 
-        if tile.side1 == game.left_sides[-1] or tile.side2 == game.left_sides[-1]: 
-            print("valid at left")
-            tile.printTile()
-            tile.valid_at_left = True
-            tile.disable = False
-
-        if tile.side1 == game.right_sides[-1] or tile.side2 == game.right_sides[-1]: 
-            print("valid at right")
-            tile.printTile()
-            tile.valid_at_right = True
-            tile.disable = False
+            if tile.side1 == game.right_sides[-1] or tile.side2 == game.right_sides[-1]: 
+                print("valid at right")
+                tile.printTile()
+                tile.valid_at_right = True
+                tile.disable = False
 
 #---------------------- valida todas las fichas para que se dejen de ver con opacidad
 def reset_tile_values():
@@ -208,14 +215,33 @@ def reset_tile_values():
             tile.valid_at_right = False
             tile.disable = False
 
+#---------------------- Jugada del bot
+def play_bot():
+    pygame.time.set_timer(SET_BOT_TILE_TIME, 0)
 
-# for tile in game.player_tiles:
-#     tile.printTile()
+    playable_bot_tiles = [tile for tile in game.bot_tiles if not tile.disable]
+    if len(playable_bot_tiles) > 0:
+        random_index = random.randint(0, len(playable_bot_tiles)-1)
+        tile = playable_bot_tiles[random_index]
 
-print("bot tiles")
+        if tile.valid_at_right:
+            game.played_right_tiles.append(tile.clone())
+        else:
+            game.played_left_tiles.append(tile.clone())
+
+        tile.removed = True
+        game.player_turn = "player"
+        game.playing_turn = False
+    else:
+        print("\nBot no tiene fichas disponibles")
+    
+#---------------
+print("\nbot tiles")
 for tile in game.bot_tiles:
     tile.printTile()
-print("")
+print("player tiles")
+for tile in game.player_tiles:
+    tile.printTile()
 
 #---------------------- Bucle de juego, (60fps)
 following_mouse = False
@@ -234,8 +260,8 @@ while True:
             if event.type == pygame.MOUSEBUTTONUP and event.button == pygame.BUTTON_LEFT:
                 for tile in game.player_tiles:
                     if not tile.disable and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
+                        print("valid tile pressed")
                         if tile.valid_at_left and tile.valid_at_right:
-                            print("valid tile pressed")
                             game.show_side_options = True
                             game.tile_available_both_sides = tile
                         else:
@@ -244,8 +270,10 @@ while True:
                             else:
                                 game.played_right_tiles.append(tile.clone())
                                 
+                            game.show_side_options = False
                             tile.removed = True
                             game.player_turn = "bot"
+                            game.playing_turn = False
                             reset_tile_values()
                         
             #--------- opcion seleccionada si la ficha se peude poner en ambos lados
@@ -259,6 +287,7 @@ while True:
                     game.tile_available_both_sides.removed = True
                     game.player_turn = "bot"
                     game.show_side_options = False
+                    game.playing_turn = False
                     reset_tile_values()
 
         #--------- Mover ficha con mouse
@@ -274,8 +303,12 @@ while True:
                 following_mouse = False
 
         # ---------- Tiempo inicial para poner ficha central
-        if event.type == TIEMPO_SEGUNDO:
+        if event.type == SET_CENTER_TILE_TIME:
             set_center_tile([game.player_tiles, game.bot_tiles])
+        
+        # ---------- Demora de tiempo para q el bot ponga la ficha
+        if event.type == SET_BOT_TILE_TIME:
+            play_bot()
     #--------- End of events
              
     #--------- Mover ficha con mouse
@@ -292,15 +325,16 @@ while True:
 
     if not game.playing_turn:
         if game.player_turn == "bot":
-            turn(game.bot_tiles)
+            valid_tiles(game.bot_tiles)
+            pygame.time.set_timer(SET_BOT_TILE_TIME, 1000)
         elif game.player_turn == "player":
-            turn(game.player_tiles)
+            valid_tiles(game.player_tiles)
         game.playing_turn = True
 
     #--------- mostrar opciones para seleccionar el lado donde poner la ficha
     if game.show_side_options:
         srfc_side_options.blit(pygame.image.load('assets/select_a_side.jpg'), (0,0))
-        left_side_option.fill((0, 0, 0, 0))
+        left_side_option.fill((0, 0, 0, 0)) # fill(R, G, B, Opacity)
         right_side_option.fill((0, 0, 0, 0))
         screen.blit(srfc_side_options, srfc_side_options_rect)
         screen.blit(left_side_option, left_side_option_rect)
