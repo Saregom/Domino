@@ -22,12 +22,12 @@ class Tile(ABC):
         self.rect1.y = y
 
     def set_horizontal(self):
-        self.rect2.y = self.rect1.y
         self.rect2.x = self.rect1.x+50
+        self.rect2.y = self.rect1.y
 
-    def set_horizontal_2(self):
+    def set_horizontal_reverse(self):
+        self.rect2.x = self.rect1.x-50
         self.rect2.y = self.rect1.y
-        self.rect2.x = self.rect1.x+50
 
     def set_vertical(self):
         self.rect2.x = self.rect1.x

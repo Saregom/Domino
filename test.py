@@ -2,6 +2,11 @@ from tiles.typeTiles.simpleTile import Tile
 from tiles.typeTiles.simpleTile import SimpleTile
 from tiles.typeTiles.doubleTile import DoubleTile
 
+def a(num):
+    num += 3
+
 if __name__ == "__main__":
-    sdfa = [1, 2]
-    print(sdfa[-2])
+    b = 4
+    print(b)
+    a(b)
+    print(b)

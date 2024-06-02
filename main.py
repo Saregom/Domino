@@ -92,12 +92,15 @@ def take_tiles(list: List, tiles_to_take):
 there_is_double = False
 while not there_is_double: 
     print("Reparticion")
+    game.player_tiles = []
+    game.bot_tiles = []
     take_tiles(game.player_tiles, 7)
     take_tiles(game.bot_tiles, 7)
     for tiles_list in [game.player_tiles, game.bot_tiles]:
         for tile in tiles_list:
             if tile.is_class(DoubleTile):
                 there_is_double = True
+    if not there_is_double: print("No doble")
     
 
 #---------------------- ubicar fichas de cada jugador (mano)
@@ -124,31 +127,35 @@ def show_tiles():
         tile.set_vertical()
         tile.draw(screen)
 
-    pos_width = WIDHT/2-130
-    pos_height = HEIGHT/2-25
+    positions = [WIDHT/2-130, HEIGHT/2-25]
     for tile in game.played_left_tiles:
-        tile.set_position(pos_width, pos_height)
+        tile.set_position(positions[0], positions[1])
+        set_correct_position(tile, game.left_sides, positions, "left")
         tile.draw(screen)
-        tile.set_horizontal()
 
-    pos_width = WIDHT/2+30
-    pos_height = HEIGHT/2-25
+    positions = [WIDHT/2+30, HEIGHT/2-25]
     for tile in game.played_right_tiles:
-        tile.set_position(pos_width, pos_height)
+        tile.set_position(positions[0], positions[1])
+        set_correct_position(tile, game.right_sides, positions, "right")
         tile.draw(screen)
-        tile.set_horizontal()
+
+#---------------------- Ubica las fichas en la posicion correcta en el tablero
+def set_correct_position(tile:Tile, list_sides:List, positions:List, side):
+    tile.set_horizontal()
+    if side ==  "left":
+        if tile.side1 == list_sides[-1]: 
+            list_sides.append(tile.side2)
+            positions[0] += 50
+            tile.set_position(positions[0], positions[1])
+            tile.set_horizontal_reverse()
+    else:
+        if tile.side2 == list_sides[-1]: 
+            list_sides.append(tile.side1)
+            positions[0] += 50
+            tile.set_position(positions[0], positions[1])
+            tile.set_horizontal_reverse()
     
-    # if len(self.played_left_tiles):
 
-def set_correct_position():
-    # if tile.side1 == game.left_sides[-1]: 
-    #     game.left_sides.append(tile.side2)
-
-    # else: game.left_sides.append(tile.side1)
-
-    # if tile.side1 == game.right_sides[-1]: game.right_sides.append(tile.side2)
-    # else: game.right_sides.append(tile.side1)
-    pass
    
 #---------------------- ubicar la ficha inicial (central)
 def set_center_tile(tiles_list):
