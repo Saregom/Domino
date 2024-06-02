@@ -123,17 +123,24 @@ def show_hand_tiles(tiles_list:List, height, is_bot):
             
 #---------------------- mostrar fichas jugadas 
 def show_tiles():
+    game.left_sides = []
+    game.right_sides = []
+
     for tile in game.center_tile:
         tile.set_position(WIDHT/2-25, HEIGHT/2-50)
         tile.set_vertical()
         tile.draw(screen)
 
-    positions = [WIDHT/2-130, HEIGHT/2-25]
+    if len(game.center_tile) != 0:
+        game.left_sides.append(game.center_tile[0].side1)
+        game.right_sides.append(game.center_tile[0].side1)
+
+    positions = [WIDHT/2-25, HEIGHT/2-25, "normal"] #[pos x, pos y, "posicion final: (posicion de ficha doble / posicion invertida / posicion normal)"] 
     for i, tile in  enumerate(game.played_left_tiles):
         set_correct_position(tile, game.left_sides, positions, i, "left")
         tile.draw(screen)
 
-    positions = [WIDHT/2+30, HEIGHT/2-25, 0]
+    positions = [WIDHT/2-75, HEIGHT/2-25, "normal"]
     for i, tile in enumerate(game.played_right_tiles):
         set_correct_position(tile, game.right_sides, positions, i, "right")
         tile.draw(screen)
@@ -143,23 +150,37 @@ def set_correct_position(tile:Tile, list_sides:List, positions:List, cont, side)
     if side ==  "left":
         if tile.side1 == list_sides[cont]: 
             list_sides.append(tile.side2)
-            positions[0] += 50
+            match positions[2]:
+                case "normal": positions[0] -= 55
+                case "reversed": positions[0] -= 105
             tile.set_position(positions[0], positions[1])
             tile.set_horizontal_reverse()
+            positions[2] = "reversed"
         else:
             list_sides.append(tile.side1)
+            match positions[2]:
+                case "normal": positions[0] -= 105
+                case "reversed": positions[0] -= 155
             tile.set_position(positions[0], positions[1])
             tile.set_horizontal()
+            positions[2] = "normal"
     else:
         if tile.side2 == list_sides[cont]:
             list_sides.append(tile.side1)
-            positions[0] += 50
+            match positions[2]:
+                case "normal": positions[0] += 155
+                case "reversed": positions[0] += 105
             tile.set_position(positions[0], positions[1])
             tile.set_horizontal_reverse()
+            positions[2] = "reversed"
         else:
             list_sides.append(tile.side2)
+            match positions[2]:
+                case "normal": positions[0] += 105
+                case "reversed": positions[0] += 55
             tile.set_position(positions[0], positions[1])
             tile.set_horizontal()
+            positions[2] = "normal"
 
    
 #---------------------- ubicar la ficha inicial (central)
@@ -177,8 +198,6 @@ def set_center_tile(tiles_list):
                     break
 
     game.center_tile.append(tile_center.clone())
-    game.left_sides.append(tile_center.side1)
-    game.right_sides.append(tile_center.side1)
 
     for j in range(2):
         for tile in tiles_list[j]:
@@ -255,7 +274,7 @@ while True:
             pygame.quit()
             sys.exit()
         
-        #--------- Mover ficha con mouse
+        #--------- turno del jugador, registra los clicks en las fichas
         if game.player_turn == "player" :
             if event.type == pygame.MOUSEBUTTONUP and event.button == pygame.BUTTON_LEFT:
                 for tile in game.player_tiles:
@@ -341,4 +360,4 @@ while True:
         screen.blit(right_side_option, right_side_option_rect)
 
     pygame.display.update()
-    clock.tick(60)
+    clock.tick(165)
