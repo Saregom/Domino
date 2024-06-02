@@ -5,7 +5,6 @@ class DoubleTile(Tile):
         super().__init__()
         self.side1 = side
         self.side2 = side
-        # if side != -1:
         self.set_image()
 
     def printTile(self):

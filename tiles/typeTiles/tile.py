@@ -10,26 +10,41 @@ class Tile(ABC):
         self.image2: pygame.surface
         self.rect1: pygame.Rect
         self.rect2: pygame.Rect
+
         self.removed = False
-        
+        self.disable = False
+
+        self.valid_at_left = False
+        self.valid_at_right = False
 
     def set_position(self, x, y):
         self.rect1.x = x
         self.rect1.y = y
 
-    def setHorizontal(self):
+    def set_horizontal(self):
         self.rect2.y = self.rect1.y
         self.rect2.x = self.rect1.x+50
 
-    def setVertical(self):
+    def set_horizontal_2(self):
+        self.rect2.y = self.rect1.y
+        self.rect2.x = self.rect1.x+50
+
+    def set_vertical(self):
         self.rect2.x = self.rect1.x
         self.rect2.y = self.rect1.y+50
 
     def draw(self, screen):
+        if self.disable:
+            self.image1.set_alpha(70)
+            self.image2.set_alpha(70)
+        else:
+            self.image1.set_alpha(255) #255: 100%
+            self.image2.set_alpha(255)
+
         screen.blit(self.image1, self.rect1)
         screen.blit(self.image2, self.rect2)
 
-    def isClass(self, get_class):
+    def is_class(self, get_class):
         return isinstance(self, get_class)
 
 
@@ -39,11 +54,11 @@ class Tile(ABC):
 
     @abstractmethod
     def printTile(self):
-        pass 
+        pass
 
     @abstractmethod
     def clone(self):
-        pass 
+        pass
 
     # #Getters, setters, actuan como los atributos, se llaman sin el parentesis
     # @property
