@@ -200,8 +200,9 @@ def set_center_tile(tiles_list):
 
 #---------------------- Valida las fichas que se pueden jugar y las que no, las desabilita (baja la opacidad)
 def valid_tiles(tiles_list):
-    game.can_take_tile = True
     print("\n------Turno " + game.player_turn)
+    game.can_take_tile = True
+
     for tile in tiles_list:
         tile.disable = True
         if not tile.removed:
@@ -220,12 +221,11 @@ def valid_tiles(tiles_list):
                 game.can_take_tile = False
 
 #---------------------- valida todas las fichas para que se dejen de ver con opacidad
-def reset_tile_values():
-    for list in [game.player_tiles, game.bot_tiles]:
-        for tile in list:
-            tile.valid_at_left = False
-            tile.valid_at_right = False
-            tile.disable = False
+def reset_tile_values(tiles_list):
+    for tile in tiles_list:
+        tile.valid_at_left = False
+        tile.valid_at_right = False
+        tile.disable = False
 
 #---------------------- Jugada del bot
 def play_bot():
@@ -233,8 +233,9 @@ def play_bot():
 
     playable_bot_tiles = [tile for tile in game.bot_tiles if not tile.disable]
     if len(playable_bot_tiles) > 0:
-        random_index = random.randint(0, len(playable_bot_tiles)-1)
-        tile = playable_bot_tiles[random_index]
+        game.player_bot_can_play[1] = True
+
+        tile = random.choice(playable_bot_tiles)
 
         if tile.valid_at_right:
             game.played_right_tiles.append(tile.clone())
@@ -242,22 +243,61 @@ def play_bot():
             game.played_left_tiles.append(tile.clone())
 
         tile.removed = True
-        game.player_turn = "player"
-        game.playing_turn = False
+        if not verify_win(game.bot_tiles):
+            game.player_turn = "player"
+            game.playing_turn = False
     else:
         print("\nBot no tiene fichas disponibles")
-        for tile in game.remaining_tiles:
-            if not tile.removed:
-                print("\ntile selected from remaining tiles: ")
-                tile.printTile()
-                if game.can_take_tile:
-                    game.bot_tiles.append(tile.clone()) #----------------------------------------------- aleatorio
-                    tile.removed = True
-                    game.can_take_tile = False
-                    valid_tiles(game.bot_tiles)
-                    pygame.time.set_timer(SET_BOT_TILE_TIME, 1000)
-            if not game.can_take_tile: break
-        
+        available_remaining_tiles = [tile for tile in game.remaining_tiles if not tile.removed]
+
+        if available_remaining_tiles: # devuelve true si la lista no es vacia, si no, devuelve false
+            tile = random.choice(available_remaining_tiles)
+
+            print("\nselected tile from remaining tiles: ")
+            tile.printTile()
+
+            game.bot_tiles.append(tile.clone())
+            tile.removed = True
+            
+            reset_tile_values(game.bot_tiles)
+            valid_tiles(game.bot_tiles)
+            pygame.time.set_timer(SET_BOT_TILE_TIME, 1000)
+        else:
+            print("\nNOT MORE REMAININMG TILES")
+            game.player_bot_can_play[1] = False
+
+            if game.player_bot_can_play[0]:
+                print("\nSALTO TURNO PLAYER")
+                game.player_turn = "player"
+                game.playing_turn = False
+            else:
+                game.finished = True
+                
+def verify_win(tiles_list):
+    total_tiles_not_removed = [tile for tile in tiles_list if not tile.removed]
+    if not total_tiles_not_removed:
+        print("--------- HA GANADO: " + game.player_turn +" ---------")
+        game.finished = True
+        return True
+    return False
+
+def verify_if_player_lost():
+    if not verify_win(game.player_tiles):
+        available_remaining_tiles = [tile for tile in game.remaining_tiles if not tile.removed]
+        if available_remaining_tiles: # Es false si la lista es vacia
+            game.player_bot_can_play[0] = True
+        else:
+            print("\nNOT MORE REMAININMG TILES")
+            game.player_bot_can_play[0] = False
+
+            if game.can_take_tile:
+                print("\nPLAYER CANT PLAY")
+                if game.player_bot_can_play[1]:
+                    print("\nSALTO TURNO BOT")
+                    game.player_turn = "bot"
+                    game.playing_turn = False
+                else:
+                    game.finished = True
     
 #---------------
 print("\nbot tiles")
@@ -279,19 +319,24 @@ while True:
             pygame.quit()
             sys.exit()
         
+        #--------- evento al hacer click en las fichas restantes
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
+            selected_tile = None
             for tile in game.remaining_tiles:
                 if not tile.removed and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
-                    print("\ntile selected from remaining tiles: ")
-                    tile.printTile()
-                    if proxy_game.verify_player(game.player_turn) and game.can_take_tile:
-                        game.player_tiles.append(tile.clone())
-                        tile.removed = True
-                        game.can_take_tile = False
-                        valid_tiles(game.player_tiles)
-                    else:
-                        proxy_game.show_alert = True
-                        pygame.time.set_timer(SHOW_ALERT_TIME, 2000)
+                    selected_tile = tile
+            
+            if selected_tile != None:
+                print("\ntile selected from remaining tiles: ")
+                selected_tile.printTile()
+                if proxy_game.verify_player(game.player_turn) and game.can_take_tile:
+                    game.player_tiles.append(selected_tile.clone())
+                    selected_tile.removed = True
+                    valid_tiles(game.player_tiles)
+                    verify_if_player_lost()
+                else:
+                    proxy_game.show_alert = True
+                    pygame.time.set_timer(SHOW_ALERT_TIME, 2000)
 
         #--------- si es el turno del jugador, el proxy le da acceso a las siguientes acciones
         if proxy_game.verify_player(game.player_turn):
@@ -319,7 +364,7 @@ while True:
                             tile.removed = True
                             game.player_turn = "bot"
                             game.playing_turn = False
-                            reset_tile_values()
+                            reset_tile_values(game.player_tiles)
                         
             #--------- opcion seleccionada si la ficha se puede poner en ambos lados
             if game.show_side_options and event.type == pygame.MOUSEBUTTONDOWN:
@@ -333,7 +378,7 @@ while True:
                     game.player_turn = "bot"
                     game.show_side_options = False
                     game.playing_turn = False
-                    reset_tile_values()
+                    reset_tile_values(game.player_tiles)
 
         #--------- Mover ficha con mouse
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -371,13 +416,15 @@ while True:
 
     show_tiles()  
 
+
     if not game.playing_turn:
+        game.playing_turn = True
         if game.player_turn == "bot":
             valid_tiles(game.bot_tiles)
             pygame.time.set_timer(SET_BOT_TILE_TIME, 1000)
         elif game.player_turn == "player":
             valid_tiles(game.player_tiles)
-        game.playing_turn = True
+            verify_if_player_lost()
 
     #--------- mostrar opciones para seleccionar el lado donde poner la ficha
     if game.show_side_options:
@@ -390,6 +437,12 @@ while True:
 
     if proxy_game.show_alert:
         proxy_game.alert(screen, WIDHT, HEIGHT)
+        
+    if game.finished:
+        print("--------- THE GAME HAS FINISHED ---------")
+        game.finished = False
+        game.playing_turn = False
+        game.player_turn = ""
         
     pygame.display.update()
     clock.tick(60)

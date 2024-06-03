@@ -25,6 +25,9 @@ class Game(Interface_game):
 
         self.can_take_tile = False
 
+        self.player_bot_can_play = [True, True] #[player perdio, bot perdio]
+        self.finished = False
+
         pygame.time.set_timer(SET_CENTER_TILE_TIME, 1000)
         
 
