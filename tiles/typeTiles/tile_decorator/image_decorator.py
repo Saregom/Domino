@@ -4,6 +4,7 @@ from .tile_decorator import *
 class Image_decorator(Tile_decorator):
     def __init__(self, tile):
         super().__init__(tile)
+        self.set_image()
         
     def printTile(self):
         print(self.side1, self.side2)

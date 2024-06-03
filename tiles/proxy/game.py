@@ -23,6 +23,8 @@ class Game(Interface_game):
         self.player_turn = "player"
         self.playing_turn = True
 
+        self.can_take_tile = False
+
         pygame.time.set_timer(SET_CENTER_TILE_TIME, 1000)
         
 

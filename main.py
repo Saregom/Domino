@@ -84,28 +84,38 @@ while not there_is_double:
             if tile.is_class(DoubleTile):
                 there_is_double = True
     if not there_is_double: print("No doble")
-    
 
 #---------------------- ubicar fichas de cada jugador (mano)
 def show_hand_tiles(tiles_list:List, height, is_bot):
-    pos_width = 245 #diferencia de posiciones de cada ficha en x
+    pos_width = 190 #diferencia de posiciones de cada ficha en x
 
     for tile in tiles_list:
-        pos_width -= 55
-        if not tile.removed : 
-            tile:Tile
-            if is_bot:
-                tile = Image_decorator(tile)#patron DECORATOR, cambia imagen fichas
-                tile.set_image()
+        tile:Tile
+        if is_bot:
+            tile = Image_decorator(tile) #patron DECORATOR, cambia imagen fichas (Se cambia la instancia de la tile en este instante pero despues vuelve a ser normal (Tile))
+            
+        tile.set_position((WIDHT/2)-pos_width, height) #(x, y)
+        tile.set_vertical()
 
-            tile.set_position((WIDHT/2)-pos_width, height) #(x, y)
-            tile.set_vertical()
+        pos_width -= 55
+        if not tile.removed: 
             tile.draw(screen)
             
 #---------------------- mostrar fichas jugadas 
 def show_tiles():
     game.left_sides = []
     game.right_sides = []
+
+    with_remaining_tiles = 10
+    for tile in game.remaining_tiles:
+        tile = Image_decorator(tile)
+        tile.set_image()
+        tile.set_position(with_remaining_tiles, HEIGHT-110)
+        tile.set_vertical()
+
+        with_remaining_tiles += 10 
+        if not tile.removed:
+            tile.draw(screen)
 
     for tile in game.center_tile:
         tile.set_position(WIDHT/2-25, HEIGHT/2-50)
@@ -162,7 +172,6 @@ def set_correct_position(tile:Tile, list_sides:List, positions:List, cont, side)
             tile.set_position(positions[0], positions[1])
             tile.set_horizontal()
             positions[2] = "normal"
-
    
 #---------------------- ubicar la ficha inicial (central)
 def set_center_tile(tiles_list):
@@ -191,6 +200,7 @@ def set_center_tile(tiles_list):
 
 #---------------------- Valida las fichas que se pueden jugar y las que no, las desabilita (baja la opacidad)
 def valid_tiles(tiles_list):
+    game.can_take_tile = True
     print("\n------Turno " + game.player_turn)
     for tile in tiles_list:
         tile.disable = True
@@ -200,12 +210,14 @@ def valid_tiles(tiles_list):
                 tile.printTile()
                 tile.valid_at_left = True
                 tile.disable = False
+                game.can_take_tile = False
 
             if tile.side1 == game.right_sides[-1] or tile.side2 == game.right_sides[-1]: 
                 print("valid at right")
                 tile.printTile()
                 tile.valid_at_right = True
                 tile.disable = False
+                game.can_take_tile = False
 
 #---------------------- valida todas las fichas para que se dejen de ver con opacidad
 def reset_tile_values():
@@ -234,6 +246,18 @@ def play_bot():
         game.playing_turn = False
     else:
         print("\nBot no tiene fichas disponibles")
+        for tile in game.remaining_tiles:
+            if not tile.removed:
+                print("\ntile selected from remaining tiles: ")
+                tile.printTile()
+                if game.can_take_tile:
+                    game.bot_tiles.append(tile.clone()) #----------------------------------------------- aleatorio
+                    tile.removed = True
+                    game.can_take_tile = False
+                    valid_tiles(game.bot_tiles)
+                    pygame.time.set_timer(SET_BOT_TILE_TIME, 1000)
+            if not game.can_take_tile: break
+        
     
 #---------------
 print("\nbot tiles")
@@ -255,18 +279,30 @@ while True:
             pygame.quit()
             sys.exit()
         
-        if proxy_game.verify_player(game.player_turn):
-            #---------  Muestra la alerta proxy en caso de pulsar las fichas del bot
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:  
-                for tile in game.bot_tiles:
-                    if not tile.removed and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
-                        print('alert')
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
+            for tile in game.remaining_tiles:
+                if not tile.removed and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
+                    print("\ntile selected from remaining tiles: ")
+                    tile.printTile()
+                    if proxy_game.verify_player(game.player_turn) and game.can_take_tile:
+                        game.player_tiles.append(tile.clone())
+                        tile.removed = True
+                        game.can_take_tile = False
+                        valid_tiles(game.player_tiles)
+                    else:
                         proxy_game.show_alert = True
                         pygame.time.set_timer(SHOW_ALERT_TIME, 2000)
 
-
-            #--------- turno del jugador, registra los clicks en las fichas
+        #--------- si es el turno del jugador, el proxy le da acceso a las siguientes acciones
+        if proxy_game.verify_player(game.player_turn):
             if event.type == pygame.MOUSEBUTTONUP and event.button == pygame.BUTTON_LEFT:
+                #---------  Muestra la alerta proxy en caso de pulsar las fichas del bot
+                for tile in game.bot_tiles:
+                    if not tile.removed and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
+                        proxy_game.show_alert = True
+                        pygame.time.set_timer(SHOW_ALERT_TIME, 2000)
+
+                #--------- registra los clicks en las fichas del jugador
                 for tile in game.player_tiles:
                     if not tile.disable and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
                         print("valid tile pressed")
@@ -305,7 +341,7 @@ while True:
                 if tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos):
                     if event.button == pygame.BUTTON_LEFT:
                         current_tile = tile
-                        following_mouse = False # Se deja o no?
+                        following_mouse = False #----------------------------------------------- Se deja o no?
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if (event.button == 1):  # Botón izquierdo del mouse
@@ -319,7 +355,7 @@ while True:
         if event.type == SET_BOT_TILE_TIME:
             play_bot()
 
-        # ---------- despues de que pasa el tiempo de la alerta activa, se 
+        # ---------- despues de que pasa el tiempo de la alerta activa, se deja de mostrar
         if event.type == SHOW_ALERT_TIME:
             pygame.time.set_timer(SHOW_ALERT_TIME, 0)
             proxy_game.show_alert = False
