@@ -4,10 +4,10 @@ from tiles.typeTiles.tile import *
 class Tile_decorator(Tile):
     def __init__(self, tile):
         super().__init__()
-        self.tile = tile
-        self.side1 = self.tile.side1
-        self.side2 = self.tile.side2
-        self.removed = self.tile.removed
+        self.side1 = tile.side1
+        self.side2 = tile.side2
+        self.rect1 = tile.rect1
+        self.rect2 = tile.rect2
 
     def printTile(self):
         print(self.side1, self.side2)

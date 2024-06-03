@@ -8,6 +8,8 @@ from tiles.typeTiles.doubleTile import DoubleTile
 from tiles.typeTiles.tile import Tile
 from tiles.typeTiles.tile_decorator.image_decorator import Image_decorator
 from fondo_singleton.Fondo import Fondo
+from tiles.proxy.game import Game
+from tiles.proxy.proxy_game import Proxy_game
 
 
 #---------------------- Inicializacion pygame, ventana y atributos
@@ -35,31 +37,11 @@ right_side_option_rect = right_side_option.get_rect(x=srfc_side_options_rect.x+1
 #---------------------- eventos de tiempo
 SET_CENTER_TILE_TIME = pygame.USEREVENT + 1
 SET_BOT_TILE_TIME = pygame.USEREVENT + 2
+SHOW_ALERT_TIME = pygame.USEREVENT + 3
 
 #---------------------- Clase juego, inicilizacion de variables
-class Game():
-    def __init__(self):
-        self.total_tiles = [] #Almacena las 28 fichas del domino
-
-        self.remaining_tiles = [] #Total de fichas sobrantes de la partida
-        self.player_tiles = []
-        self.bot_tiles = []
-
-        self.center_tile = []
-        self.played_left_tiles = []
-        self.played_right_tiles = []
-        self.left_sides = []
-        self.right_sides = []
-
-        self.show_side_options = False
-        self.tile_available_both_sides:Tile 
-        
-        self.player_turn = "player"
-        self.playing_turn = True
-
-        pygame.time.set_timer(SET_CENTER_TILE_TIME, 1000) #evento se llama cada 3 segundos
-
-game = Game()
+game = Game(SET_CENTER_TILE_TIME)
+proxy_game = Proxy_game()
 
 #---------------------- Seteo de fichas, implementacion PATRON ABSTRACT FACTORY, y PATRON PROTOTYPE
 simpleFactory = SimpleTileFactory()
@@ -106,19 +88,18 @@ while not there_is_double:
 
 #---------------------- ubicar fichas de cada jugador (mano)
 def show_hand_tiles(tiles_list:List, height, is_bot):
-    pos_width = 190 #diferencia de posiciones de cada ficha en x
+    pos_width = 245 #diferencia de posiciones de cada ficha en x
 
     for tile in tiles_list:
-        tile:Tile
-        if is_bot:
-            tile = Image_decorator(tile)#patron DECORATOR, cambia imagen fichas
-            tile.set_image()
-
-        tile.set_position((WIDHT/2)-pos_width, height) #(x, y)
-        tile.set_vertical()
-        
         pos_width -= 55
-        if not tile.removed:
+        if not tile.removed : 
+            tile:Tile
+            if is_bot:
+                tile = Image_decorator(tile)#patron DECORATOR, cambia imagen fichas
+                tile.set_image()
+
+            tile.set_position((WIDHT/2)-pos_width, height) #(x, y)
+            tile.set_vertical()
             tile.draw(screen)
             
 #---------------------- mostrar fichas jugadas 
@@ -274,8 +255,17 @@ while True:
             pygame.quit()
             sys.exit()
         
-        #--------- turno del jugador, registra los clicks en las fichas
-        if game.player_turn == "player" :
+        if proxy_game.verify_player(game.player_turn):
+            #---------  Muestra la alerta proxy en caso de pulsar las fichas del bot
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:  
+                for tile in game.bot_tiles:
+                    if not tile.removed and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
+                        print('alert')
+                        proxy_game.show_alert = True
+                        pygame.time.set_timer(SHOW_ALERT_TIME, 2000)
+
+
+            #--------- turno del jugador, registra los clicks en las fichas
             if event.type == pygame.MOUSEBUTTONUP and event.button == pygame.BUTTON_LEFT:
                 for tile in game.player_tiles:
                     if not tile.disable and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
@@ -295,8 +285,8 @@ while True:
                             game.playing_turn = False
                             reset_tile_values()
                         
-            #--------- opcion seleccionada si la ficha se peude poner en ambos lados
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            #--------- opcion seleccionada si la ficha se puede poner en ambos lados
+            if game.show_side_options and event.type == pygame.MOUSEBUTTONDOWN:
                 if left_side_option_rect.collidepoint(event.pos): 
                     game.played_left_tiles.append(game.tile_available_both_sides.clone())
                 elif right_side_option_rect.collidepoint(event.pos): 
@@ -315,7 +305,7 @@ while True:
                 if tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos):
                     if event.button == pygame.BUTTON_LEFT:
                         current_tile = tile
-                        following_mouse = True
+                        following_mouse = False # Se deja o no?
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if (event.button == 1):  # Botón izquierdo del mouse
@@ -328,14 +318,17 @@ while True:
         # ---------- Demora de tiempo para q el bot ponga la ficha
         if event.type == SET_BOT_TILE_TIME:
             play_bot()
+
+        # ---------- despues de que pasa el tiempo de la alerta activa, se 
+        if event.type == SHOW_ALERT_TIME:
+            pygame.time.set_timer(SHOW_ALERT_TIME, 0)
+            proxy_game.show_alert = False
+    
     #--------- End of events
              
     #--------- Mover ficha con mouse
-    if following_mouse is True:
-        mouse_pos = pygame.mouse.get_pos()
-        current_tile.set_position(mouse_pos[0], mouse_pos[1])
-        current_tile.set_vertical()
-        current_tile.draw(screen)
+    if following_mouse:
+        proxy_game.alert(screen, HEIGHT, WIDHT)
 
     show_hand_tiles(game.player_tiles, HEIGHT-120, False)
     show_hand_tiles(game.bot_tiles, 20, True)  
@@ -352,12 +345,15 @@ while True:
 
     #--------- mostrar opciones para seleccionar el lado donde poner la ficha
     if game.show_side_options:
-        srfc_side_options.blit(pygame.image.load('assets/select_a_side.jpg'), (0,0))
+        srfc_side_options.blit(pygame.image.load('assets/select_a_side.png'), (0,0))
         left_side_option.fill((0, 0, 0, 0)) # fill(R, G, B, Opacity)
         right_side_option.fill((0, 0, 0, 0))
         screen.blit(srfc_side_options, srfc_side_options_rect)
         screen.blit(left_side_option, left_side_option_rect)
         screen.blit(right_side_option, right_side_option_rect)
 
+    if proxy_game.show_alert:
+        proxy_game.alert(screen, WIDHT, HEIGHT)
+        
     pygame.display.update()
-    clock.tick(165)
+    clock.tick(60)

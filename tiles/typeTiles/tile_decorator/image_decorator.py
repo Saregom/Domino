@@ -13,9 +13,6 @@ class Image_decorator(Tile_decorator):
         self.image1 = pygame.image.load("assets/0.png").convert_alpha()
         self.image2 = pygame.image.load("assets/0.png").convert_alpha()
         
-        self.rect1 = self.image1.get_rect()
-        self.rect2 = self.image2.get_rect()
-
     #Metodo patron prototype
     def clone(self):
         return Image_decorator(self.tile)
