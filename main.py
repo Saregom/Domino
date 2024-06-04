@@ -64,12 +64,14 @@ for i in range(0, 7):
         game.total_tiles.append(cloned_tile)
 
 #----------------------Reparticion de fichas: tanto el juagdor como el bot cogen fichas de la lista de fichas restantes (lista, cantidad de fichas a coger)
-game.remaining_tiles = game.total_tiles.copy()
+game.remaining_tiles = game.total_tiles.copy() # Se almacenan la copia de todas las fichas
 
 def take_tiles(list: List, tiles_to_take):
     for i in range(tiles_to_take):
         random_tile = random.randint(0, len(game.remaining_tiles)-1)
-        list.append(game.remaining_tiles.pop(random_tile))
+        list.append(game.remaining_tiles.pop(random_tile)) # Se agrega una ficha aleatoria a la lista pasada y se elimina de las fichas restantes
+
+random.shuffle(game.remaining_tiles) # Las fichas restantes se mezclan para que no esten en el orden en q se agregaron
 
 #------- Verificar si hay una ficha doble, si no, vuelve a repartir fichas
 there_is_double = False
@@ -101,19 +103,21 @@ def show_hand_tiles(tiles_list:List, height, is_bot):
         if not tile.removed: 
             tile.draw(screen)
             
-#---------------------- mostrar fichas jugadas 
+#---------------------- mostrar fichas jugadas y fichas restantes (Pozo)
 def show_tiles():
     game.left_sides = []
     game.right_sides = []
 
-    with_remaining_tiles = 10
+    with_remaining_tiles = 24
+    height_remaining_tiles = HEIGHT-148
     for tile in game.remaining_tiles:
         tile = Image_decorator(tile)
         tile.set_image()
-        tile.set_position(with_remaining_tiles, HEIGHT-110)
+        tile.set_position(with_remaining_tiles, height_remaining_tiles)
         tile.set_vertical()
 
         with_remaining_tiles += 10 
+        height_remaining_tiles += 2
         if not tile.removed:
             tile.draw(screen)
 
@@ -127,13 +131,35 @@ def show_tiles():
         game.right_sides.append(game.center_tile[0].side1)
 
     positions = [WIDHT/2-25, HEIGHT/2-25, "normal"] #[pos x, pos y, "posicion final: (posicion de ficha doble / posicion invertida / posicion normal)"] 
+    changed_line = False
+    direction = "left"
     for i, tile in  enumerate(game.played_left_tiles):
-        set_correct_position(tile, game.left_sides, positions, i, "left")
+        # Si la ficha alcanza el limite para seguir poniendo mas (width = 200) , test=715
+        if positions[0] <= 200 and not changed_line: 
+            changed_line = True
+            direction = "right"
+            match positions[2]:
+                case "double": positions = [positions[0]-55, positions[1]-200, "double"] #positions[0]-55: Es como si la ficha double(vertical) estuviera 55 pixeles atras
+                case "reversed": positions = [positions[0]-105, positions[1]-200, "reversed"] #positions[0]-55: Es como si la ficha reversed(horizontal) estuviera 55 pixeles atras
+                case "normal": positions = [positions[0]-105, positions[1]-200, "normal"] #positions[0]-155: porque es como si la ficha normal(horizontal) estuviera 155 pixeles atras
+        
+        set_correct_position(tile, game.left_sides, positions, i, direction)
         tile.draw(screen)
 
     positions = [WIDHT/2-75, HEIGHT/2-25, "normal"]
+    changed_line = False
+    direction = "right"
     for i, tile in enumerate(game.played_right_tiles):
-        set_correct_position(tile, game.right_sides, positions, i, "right")
+        # Si la ficha alcanza el limite para seguir poniendo mas (width = WIDHT-200) , test = 1085
+        if positions[0] >= WIDHT-200 and not changed_line: 
+            changed_line = True
+            direction = "left"
+            match positions[2]:
+                case "double": positions = [positions[0]+55, positions[1]+200, "double"] #positions[0]+55: Es como si la ficha double(vertical) estuviera 55 pixeles adelante
+                case "reversed": positions = [positions[0]+105, positions[1]+200, "reversed"] #positions[0]+55: Es como si la ficha reversed(horizontal) estuviera 55 pixeles adelante
+                case "normal": positions = [positions[0]+105, positions[1]+200, "normal"] #positions[0]+155: porque es como si la ficha normal(horizontal) estuviera 155 pixeles adelante
+
+        set_correct_position(tile, game.right_sides, positions, i, direction)
         tile.draw(screen)
 
 #---------------------- Ubica las fichas en la posicion correcta en el tablero
@@ -221,6 +247,9 @@ def set_center_tile(tiles_list):
 #---------------------- Valida las fichas que se pueden jugar y las que no, las desabilita (baja la opacidad)
 def valid_tiles(tiles_list):
     print("\n------Turno " + game.player_turn)
+    for tile in tiles_list:
+        if not tile.removed:
+            tile.printTile()
     game.can_take_tile = True
 
     for tile in tiles_list:
@@ -263,6 +292,7 @@ def play_bot():
             game.played_left_tiles.append(tile.clone())
 
         tile.removed = True
+        reset_tile_values(game.bot_tiles)
         if not verify_win(game.bot_tiles):
             game.player_turn = "player"
             game.playing_turn = False
@@ -319,11 +349,11 @@ def verify_if_player_lost():
                 else:
                     game.finished = True
     
-#---------------
+#--------------- Se muestran las fichas de todos
 print("\nbot tiles")
 for tile in game.bot_tiles:
     tile.printTile()
-print("player tiles")
+print("\nplayer tiles")
 for tile in game.player_tiles:
     tile.printTile()
 
@@ -341,6 +371,7 @@ while True:
         
         #--------- evento al hacer click en las fichas restantes
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
+            # print(event.pos)
             selected_tile = None
             for tile in game.remaining_tiles:
                 if not tile.removed and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
@@ -387,7 +418,6 @@ while True:
                             if not verify_win(game.player_tiles):
                                 game.player_turn = "bot"
                                 game.playing_turn = False
-                            
                         
             #--------- opcion seleccionada si la ficha se puede poner en ambos lados
             if game.show_side_options and event.type == pygame.MOUSEBUTTONDOWN:
@@ -401,8 +431,8 @@ while True:
                     game.show_side_options = False
                     reset_tile_values(game.player_tiles)
                     if not verify_win(game.player_tiles):
-                                game.player_turn = "bot"
-                                game.playing_turn = False
+                        game.player_turn = "bot"
+                        game.playing_turn = False
 
         #--------- Mover ficha con mouse
         if event.type == pygame.MOUSEBUTTONDOWN:
