@@ -134,7 +134,7 @@ def show_tiles():
     changed_line = False
     direction = "left"
     for i, tile in  enumerate(game.played_left_tiles):
-        # Si la ficha alcanza el limite para seguir poniendo mas (width = 200) , test=715
+        # Si la ficha alcanza el limite para seguir poniendo mas, pasan para arriba (width = 200) , test=715
         if positions[0] <= 200 and not changed_line: 
             changed_line = True
             direction = "right"
@@ -150,8 +150,8 @@ def show_tiles():
     changed_line = False
     direction = "right"
     for i, tile in enumerate(game.played_right_tiles):
-        # Si la ficha alcanza el limite para seguir poniendo mas (width = WIDHT-200) , test = 1085
-        if positions[0] >= WIDHT-200 and not changed_line: 
+        # Si la ficha alcanza el limite para seguir poniendo mas, pasan para abajo (width = WIDHT-250) , test = 1085
+        if positions[0] >= WIDHT-230 and not changed_line: 
             changed_line = True
             direction = "left"
             match positions[2]:
@@ -338,10 +338,9 @@ def verify_if_player_lost():
             game.player_bot_can_play[0] = True
         else:
             print("\nNOT MORE REMAININMG TILES")
-            game.player_bot_can_play[0] = False
-
             if game.can_take_tile:
                 print("\nPLAYER CANT PLAY")
+                game.player_bot_can_play[0] = False
                 if game.player_bot_can_play[1]:
                     print("\nSALTO TURNO BOT")
                     game.player_turn = "bot"
