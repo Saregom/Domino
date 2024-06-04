@@ -139,39 +139,59 @@ def show_tiles():
 #---------------------- Ubica las fichas en la posicion correcta en el tablero
 def set_correct_position(tile:Tile, list_sides:List, positions:List, cont, side):
     if side ==  "left":
-        if tile.side1 == list_sides[cont]: 
+        if tile.side1 == list_sides[cont]: #list_sides[-1] (borrar cont)
             list_sides.append(tile.side2)
+
             match positions[2]:
-                case "normal": positions[0] -= 55
+                case "normal" | "double": positions[0] -= 55
                 case "reversed": positions[0] -= 105
-            tile.set_position(positions[0], positions[1])
-            tile.set_horizontal_reverse()
-            positions[2] = "reversed"
+
+            #--- Si la ficha es doble
+            if tile.side1 == tile.side2: 
+                tile.set_position(positions[0], positions[1]-25)
+                tile.set_vertical()
+                positions[2] = "double"
+            else:
+                tile.set_position(positions[0], positions[1])
+                tile.set_horizontal_reverse()
+                positions[2] = "reversed"
         else:
             list_sides.append(tile.side1)
+
             match positions[2]:
-                case "normal": positions[0] -= 105
+                case "normal" | "double": positions[0] -= 105
                 case "reversed": positions[0] -= 155
+
             tile.set_position(positions[0], positions[1])
             tile.set_horizontal()
             positions[2] = "normal"
     else:
-        if tile.side2 == list_sides[cont]:
+        if tile.side1 == list_sides[cont]:
+            list_sides.append(tile.side2)
+
+            match positions[2]:
+                case "normal": positions[0] += 105
+                case "reversed" | "double": positions[0] += 55
+
+            #--- Si la ficha es doble
+            if tile.side1 == tile.side2: 
+                tile.set_position(positions[0], positions[1]-25)
+                tile.set_vertical()
+                positions[2] = "double"
+            else:
+                tile.set_position(positions[0], positions[1])
+                tile.set_horizontal()
+                positions[2] = "normal"
+        else:
             list_sides.append(tile.side1)
+
             match positions[2]:
                 case "normal": positions[0] += 155
-                case "reversed": positions[0] += 105
+                case "reversed" | "double": positions[0] += 105
+
             tile.set_position(positions[0], positions[1])
             tile.set_horizontal_reverse()
             positions[2] = "reversed"
-        else:
-            list_sides.append(tile.side2)
-            match positions[2]:
-                case "normal": positions[0] += 105
-                case "reversed": positions[0] += 55
-            tile.set_position(positions[0], positions[1])
-            tile.set_horizontal()
-            positions[2] = "normal"
    
 #---------------------- ubicar la ficha inicial (central)
 def set_center_tile(tiles_list):
@@ -247,13 +267,13 @@ def play_bot():
             game.player_turn = "player"
             game.playing_turn = False
     else:
-        print("\nBot no tiene fichas disponibles")
+        print("BOT HAS NOT AVAILABLE TILES")
         available_remaining_tiles = [tile for tile in game.remaining_tiles if not tile.removed]
 
         if available_remaining_tiles: # devuelve true si la lista no es vacia, si no, devuelve false
             tile = random.choice(available_remaining_tiles)
 
-            print("\nselected tile from remaining tiles: ")
+            print("selected tile from remaining tiles: ")
             tile.printTile()
 
             game.bot_tiles.append(tile.clone())
@@ -276,7 +296,7 @@ def play_bot():
 def verify_win(tiles_list):
     total_tiles_not_removed = [tile for tile in tiles_list if not tile.removed]
     if not total_tiles_not_removed:
-        print("--------- HA GANADO: " + game.player_turn +" ---------")
+        print("--------- THE WINNER IS: " + game.player_turn +" ---------")
         game.finished = True
         return True
     return False
@@ -307,7 +327,7 @@ print("player tiles")
 for tile in game.player_tiles:
     tile.printTile()
 
-#---------------------- Bucle de juego, (60fps)
+#-------------------------------------------------------------------- Bucle de juego
 following_mouse = False
 current_tile:Tile = None
 
@@ -326,8 +346,9 @@ while True:
                 if not tile.removed and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
                     selected_tile = tile
             
+            #--------- Si la ficha fue seleccionada
             if selected_tile != None:
-                print("\ntile selected from remaining tiles: ")
+                print("selected tile from remaining tiles: ")
                 selected_tile.printTile()
                 if proxy_game.verify_player(game.player_turn) and game.can_take_tile:
                     game.player_tiles.append(selected_tile.clone())
@@ -359,12 +380,14 @@ while True:
                                 game.played_left_tiles.append(tile.clone())
                             else:
                                 game.played_right_tiles.append(tile.clone())
-                                
+                            
                             game.show_side_options = False
                             tile.removed = True
-                            game.player_turn = "bot"
-                            game.playing_turn = False
                             reset_tile_values(game.player_tiles)
+                            if not verify_win(game.player_tiles):
+                                game.player_turn = "bot"
+                                game.playing_turn = False
+                            
                         
             #--------- opcion seleccionada si la ficha se puede poner en ambos lados
             if game.show_side_options and event.type == pygame.MOUSEBUTTONDOWN:
@@ -375,10 +398,11 @@ while True:
                 
                 if left_side_option_rect.collidepoint(event.pos) or right_side_option_rect.collidepoint(event.pos):
                     game.tile_available_both_sides.removed = True
-                    game.player_turn = "bot"
                     game.show_side_options = False
-                    game.playing_turn = False
                     reset_tile_values(game.player_tiles)
+                    if not verify_win(game.player_tiles):
+                                game.player_turn = "bot"
+                                game.playing_turn = False
 
         #--------- Mover ficha con mouse
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -416,7 +440,7 @@ while True:
 
     show_tiles()  
 
-
+    #--------- verifica que el jugador o el bot no esten jugando y despues juega el player o el bot
     if not game.playing_turn:
         game.playing_turn = True
         if game.player_turn == "bot":
@@ -445,4 +469,4 @@ while True:
         game.player_turn = ""
         
     pygame.display.update()
-    clock.tick(60)
+    clock.tick(60) # fps
