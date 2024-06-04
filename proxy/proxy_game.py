@@ -1,6 +1,5 @@
 import pygame
-from tiles.proxy.interface_game import Interface_game
-from tiles.typeTiles.tile import Tile
+from proxy.interface_game import Interface_game
 
 class Proxy_game(Interface_game):
     def __init__(self):

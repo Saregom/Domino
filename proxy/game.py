@@ -1,6 +1,6 @@
 import pygame
 from tiles.typeTiles.tile import Tile
-from tiles.proxy.interface_game import Interface_game
+from proxy.interface_game import Interface_game
 
 class Game(Interface_game):
     
@@ -29,7 +29,6 @@ class Game(Interface_game):
         self.finished = False
 
         pygame.time.set_timer(SET_CENTER_TILE_TIME, 1000)
-        
 
     def verify_player(self):
         if self.player_turn is "player":

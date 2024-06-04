@@ -8,8 +8,8 @@ from tiles.typeTiles.doubleTile import DoubleTile
 from tiles.typeTiles.tile import Tile
 from tiles.typeTiles.tile_decorator.image_decorator import Image_decorator
 from fondo_singleton.Fondo import Fondo
-from tiles.proxy.game import Game
-from tiles.proxy.proxy_game import Proxy_game
+from proxy.game import Game
+from proxy.proxy_game import Proxy_game
 
 
 #---------------------- Inicializacion pygame, ventana y atributos
@@ -131,17 +131,17 @@ def show_tiles():
         game.right_sides.append(game.center_tile[0].side1)
 
     positions = [WIDHT/2-25, HEIGHT/2-25, "normal"] #[pos x, pos y, "posicion final: (posicion de ficha doble / posicion invertida / posicion normal)"] 
-    changed_line = False
+    changed_line = False # saber si ya aso de line del centro a 200 pixeles arriba
     direction = "left"
     for i, tile in  enumerate(game.played_left_tiles):
-        # Si la ficha alcanza el limite para seguir poniendo mas, pasan para arriba (width = 200) , test=715
+        # Si la ficha alcanza el limite para seguir poniendo mas, pasan para arriba (width = 200) (y-200), test=715
         if positions[0] <= 200 and not changed_line: 
             changed_line = True
-            direction = "right"
+            direction = "right" # ahora las fichas se dibujaran hacia la derecha
             match positions[2]:
                 case "double": positions = [positions[0]-55, positions[1]-200, "double"] #positions[0]-55: Es como si la ficha double(vertical) estuviera 55 pixeles atras
-                case "reversed": positions = [positions[0]-105, positions[1]-200, "reversed"] #positions[0]-55: Es como si la ficha reversed(horizontal) estuviera 55 pixeles atras
-                case "normal": positions = [positions[0]-105, positions[1]-200, "normal"] #positions[0]-155: porque es como si la ficha normal(horizontal) estuviera 155 pixeles atras
+                case "reversed": positions = [positions[0]-105, positions[1]-200, "reversed"] #positions[0]-105: Es como si la ficha reversed(horizontal) estuviera 105 pixeles atras
+                case "normal": positions = [positions[0]-105, positions[1]-200, "normal"] #positions[0]-105: Es como si la ficha normal(horizontal) estuviera 105 pixeles atras
         
         set_correct_position(tile, game.left_sides, positions, i, direction)
         tile.draw(screen)
@@ -150,14 +150,14 @@ def show_tiles():
     changed_line = False
     direction = "right"
     for i, tile in enumerate(game.played_right_tiles):
-        # Si la ficha alcanza el limite para seguir poniendo mas, pasan para abajo (width = WIDHT-250) , test = 1085
-        if positions[0] >= WIDHT-230 and not changed_line: 
+        # Si la ficha alcanza el limite para seguir poniendo mas, pasan para abajo (x = WIDHT-250) (y+200), test=1085
+        if positions[0] >= WIDHT-300 and not changed_line: 
             changed_line = True
             direction = "left"
             match positions[2]:
-                case "double": positions = [positions[0]+55, positions[1]+200, "double"] #positions[0]+55: Es como si la ficha double(vertical) estuviera 55 pixeles adelante
-                case "reversed": positions = [positions[0]+105, positions[1]+200, "reversed"] #positions[0]+55: Es como si la ficha reversed(horizontal) estuviera 55 pixeles adelante
-                case "normal": positions = [positions[0]+105, positions[1]+200, "normal"] #positions[0]+155: porque es como si la ficha normal(horizontal) estuviera 155 pixeles adelante
+                case "double": positions = [positions[0]+55, positions[1]+200, "double"]
+                case "reversed": positions = [positions[0]+105, positions[1]+200, "reversed"]
+                case "normal": positions = [positions[0]+105, positions[1]+200, "normal"] 
 
         set_correct_position(tile, game.right_sides, positions, i, direction)
         tile.draw(screen)
@@ -172,7 +172,7 @@ def set_correct_position(tile:Tile, list_sides:List, positions:List, cont, side)
                 case "normal" | "double": positions[0] -= 55
                 case "reversed": positions[0] -= 105
 
-            #--- Si la ficha es doble
+            # Si la ficha es doble
             if tile.side1 == tile.side2: 
                 tile.set_position(positions[0], positions[1]-25)
                 tile.set_vertical()
@@ -199,7 +199,7 @@ def set_correct_position(tile:Tile, list_sides:List, positions:List, cont, side)
                 case "normal": positions[0] += 105
                 case "reversed" | "double": positions[0] += 55
 
-            #--- Si la ficha es doble
+            # Si la ficha es doble
             if tile.side1 == tile.side2: 
                 tile.set_position(positions[0], positions[1]-25)
                 tile.set_vertical()

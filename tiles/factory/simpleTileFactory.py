@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from .tileFactory import *
 from tiles.typeTiles.simpleTile import *
 
