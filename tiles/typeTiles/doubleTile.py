@@ -7,7 +7,7 @@ class DoubleTile(Tile):
         self.side2 = side
         self.set_image()
 
-    def printTile(self):
+    def print_tile(self):
         print(self.side1, self.side2)
 
     def set_image(self):

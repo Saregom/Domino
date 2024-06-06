@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class AbstractSubscriber(ABC):
+class Interface_subscriber(ABC):
     @abstractmethod
     def alert(self, message):
         pass

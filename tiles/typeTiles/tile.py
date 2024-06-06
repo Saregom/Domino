@@ -35,8 +35,8 @@ class Tile(ABC):
 
     def draw(self, screen):
         if self.disable:
-            self.image1.set_alpha(70)
-            self.image2.set_alpha(70)
+            self.image1.set_alpha(80)
+            self.image2.set_alpha(80)
         else:
             self.image1.set_alpha(255) #255: 100%
             self.image2.set_alpha(255)
@@ -53,7 +53,7 @@ class Tile(ABC):
         pass
 
     @abstractmethod
-    def printTile(self):
+    def print_tile(self):
         pass
 
     @abstractmethod

@@ -6,7 +6,7 @@ class Image_decorator(Tile_decorator):
         super().__init__(tile)
         self.set_image()
         
-    def printTile(self):
+    def print_tile(self):
         print(self.side1, self.side2)
         
     #DECORADOR: cambia imagen fichas normales por la imagen trasera de la ficha
