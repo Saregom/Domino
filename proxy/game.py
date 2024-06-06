@@ -3,7 +3,6 @@ from tiles.typeTiles.tile import Tile
 from proxy.interface_game import Interface_game
 
 class Game(Interface_game):
-    
     def __init__(self, SET_CENTER_TILE_TIME):
         self.total_tiles = [] #Almacena las 28 fichas del domino
 
@@ -31,8 +30,5 @@ class Game(Interface_game):
         pygame.time.set_timer(SET_CENTER_TILE_TIME, 1000)
 
     def verify_player(self):
-        if self.player_turn is "player":
-            return True
-        else:
-            return False
+        pass
             

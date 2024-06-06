@@ -1,15 +1,24 @@
 import pygame, sys, random, time
 from typing import List
 
+from fondo_singleton.Fondo import Fondo
+
+from tiles.typeTiles.tile import Tile
 from tiles.factory.simpleTileFactory import SimpleTileFactory
 from tiles.factory.doubleTileFactory import DoubleTileFactory
-#from tiles.typeTiles.simpleTile import SimpleTile
 from tiles.typeTiles.doubleTile import DoubleTile
-from tiles.typeTiles.tile import Tile
 from tiles.typeTiles.tile_decorator.image_decorator import Image_decorator
-from fondo_singleton.Fondo import Fondo
+
 from proxy.game import Game
 from proxy.proxy_game import Proxy_game
+
+from observer.subscriber_alert import Subsciber_alert
+from observer.subscriber_end_game_alert import Subscriber_end_game_alert
+
+from state.access_deneid import Access_deneid
+from state.game_over import Game_over
+from state.player_need_tiles import Player_need_tiles
+# from state.game_over import Game_over
 
 
 #---------------------- Inicializacion pygame, ventana y atributos
@@ -37,7 +46,8 @@ right_side_option_rect = right_side_option.get_rect(x=srfc_side_options_rect.x+1
 #---------------------- eventos de tiempo
 SET_CENTER_TILE_TIME = pygame.USEREVENT + 1
 SET_BOT_TILE_TIME = pygame.USEREVENT + 2
-SHOW_ALERT_TIME = pygame.USEREVENT + 3
+ALERT_ACCESS_DENIED_TIME = pygame.USEREVENT + 3
+PLAYER_NEED_TILES_TIME = pygame.USEREVENT + 4
 
 #---------------------- Clase juego, inicilizacion de variables
 game = Game(SET_CENTER_TILE_TIME)
@@ -268,6 +278,10 @@ def valid_tiles(tiles_list):
                 tile.valid_at_right = True
                 tile.disable = False
                 game.can_take_tile = False
+    
+    if game.player_turn == "player" and game.can_take_tile:
+        proxy_game.player_need_tiles_alert = True
+        pygame.time.set_timer(PLAYER_NEED_TILES_TIME, 2000)
 
 #---------------------- valida todas las fichas para que se dejen de ver con opacidad
 def reset_tile_values(tiles_list):
@@ -298,20 +312,25 @@ def play_bot():
             game.playing_turn = False
     else:
         print("BOT HAS NOT AVAILABLE TILES")
+
         available_remaining_tiles = [tile for tile in game.remaining_tiles if not tile.removed]
 
         if available_remaining_tiles: # devuelve true si la lista no es vacia, si no, devuelve false
-            tile = random.choice(available_remaining_tiles)
+            selected_tile = random.choice(available_remaining_tiles)
 
             print("selected tile from remaining tiles: ")
-            tile.printTile()
+            selected_tile.printTile()
 
-            game.bot_tiles.append(tile.clone())
-            tile.removed = True
+            proxy_game.player_need_tiles_alert = True
+            pygame.time.set_timer(PLAYER_NEED_TILES_TIME, 2000)
+            
+            add_tile_to_list(game.bot_tiles, selected_tile.clone())
+            # game.bot_tiles.append(selected_tile.clone())
+            selected_tile.removed = True
             
             reset_tile_values(game.bot_tiles)
             valid_tiles(game.bot_tiles)
-            pygame.time.set_timer(SET_BOT_TILE_TIME, 1000)
+            pygame.time.set_timer(SET_BOT_TILE_TIME, 1000) # un segundo Para que se vuelva a llamar de nuevo la funcion play_bot()
         else:
             print("\nNOT MORE REMAININMG TILES")
             game.player_bot_can_play[1] = False
@@ -331,6 +350,7 @@ def verify_win(tiles_list):
         return True
     return False
 
+#----------------------  verifica si el jugador real, 
 def verify_if_player_lost():
     if not verify_win(game.player_tiles):
         available_remaining_tiles = [tile for tile in game.remaining_tiles if not tile.removed]
@@ -338,6 +358,7 @@ def verify_if_player_lost():
             game.player_bot_can_play[0] = True
         else:
             print("\nNOT MORE REMAININMG TILES")
+
             if game.can_take_tile:
                 print("\nPLAYER CANT PLAY")
                 game.player_bot_can_play[0] = False
@@ -347,6 +368,18 @@ def verify_if_player_lost():
                     game.playing_turn = False
                 else:
                     game.finished = True
+
+#---------------------- Añadir ficha tomada de las fichas restantes a la lista del jugador indicado (se agregan en los espacios de las fichas ya jugadas)
+def add_tile_to_list(tiles_list:List, new_tile):
+    tile_added = False
+    for i, tile in enumerate(tiles_list):
+        if tile.removed:
+            tiles_list[i] = new_tile
+            tile_added = True
+            break
+    
+    if not tile_added:
+        tiles_list.append(new_tile)
     
 #--------------- Se muestran las fichas de todos
 print("\nbot tiles")
@@ -371,7 +404,7 @@ while True:
         #--------- evento al hacer click en las fichas restantes
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
             # print(event.pos)
-            selected_tile = None
+            selected_tile = None #Ficha seleccionada de las fichas restantes (pozo)
             for tile in game.remaining_tiles:
                 if not tile.removed and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
                     selected_tile = tile
@@ -381,13 +414,14 @@ while True:
                 print("selected tile from remaining tiles: ")
                 selected_tile.printTile()
                 if proxy_game.verify_player(game.player_turn) and game.can_take_tile:
-                    game.player_tiles.append(selected_tile.clone())
+                    add_tile_to_list(game.player_tiles, selected_tile.clone())
+                    # game.player_tiles.append(selected_tile.clone())
                     selected_tile.removed = True
                     valid_tiles(game.player_tiles)
                     verify_if_player_lost()
                 else:
-                    proxy_game.show_alert = True
-                    pygame.time.set_timer(SHOW_ALERT_TIME, 2000)
+                    proxy_game.alert_access_denied_alert = True
+                    pygame.time.set_timer(ALERT_ACCESS_DENIED_TIME, 2000)
 
         #--------- si es el turno del jugador, el proxy le da acceso a las siguientes acciones
         if proxy_game.verify_player(game.player_turn):
@@ -395,8 +429,8 @@ while True:
                 #---------  Muestra la alerta proxy en caso de pulsar las fichas del bot
                 for tile in game.bot_tiles:
                     if not tile.removed and (tile.rect1.collidepoint(event.pos) or tile.rect2.collidepoint(event.pos)):
-                        proxy_game.show_alert = True
-                        pygame.time.set_timer(SHOW_ALERT_TIME, 2000)
+                        proxy_game.alert_access_denied_alert = True
+                        pygame.time.set_timer(ALERT_ACCESS_DENIED_TIME, 2000)
 
                 #--------- registra los clicks en las fichas del jugador
                 for tile in game.player_tiles:
@@ -454,15 +488,19 @@ while True:
             play_bot()
 
         # ---------- despues de que pasa el tiempo de la alerta activa, se deja de mostrar
-        if event.type == SHOW_ALERT_TIME:
-            pygame.time.set_timer(SHOW_ALERT_TIME, 0)
-            proxy_game.show_alert = False
+        if event.type == ALERT_ACCESS_DENIED_TIME:
+            pygame.time.set_timer(ALERT_ACCESS_DENIED_TIME, 0)
+            proxy_game.alert_access_denied_alert = False
+        
+        if event.type == PLAYER_NEED_TILES_TIME:
+            pygame.time.set_timer(PLAYER_NEED_TILES_TIME, 0)
+            proxy_game.player_need_tiles_alert = False
     
     #--------- End of events
              
     #--------- Mover ficha con mouse
     if following_mouse:
-        proxy_game.alert(screen, HEIGHT, WIDHT)
+        proxy_game.alert(screen, HEIGHT, WIDHT, Subsciber_alert)
 
     show_hand_tiles(game.player_tiles, HEIGHT-120, False)
     show_hand_tiles(game.bot_tiles, 20, True)  
@@ -488,12 +526,20 @@ while True:
         screen.blit(left_side_option, left_side_option_rect)
         screen.blit(right_side_option, right_side_option_rect)
 
-    if proxy_game.show_alert:
-        proxy_game.alert(screen, WIDHT, HEIGHT)
+    #--------- Mostrar alerta de no puede tomar fichas
+    if proxy_game.alert_access_denied_alert:
+        proxy_game.set_state(Access_deneid())
+        proxy_game.alert(screen, WIDHT, HEIGHT, Subsciber_alert)
+    
+    if proxy_game.player_need_tiles_alert:
+        proxy_game.set_state(Player_need_tiles())
+        proxy_game.alert(screen, WIDHT, HEIGHT, Subsciber_alert)
         
     if game.finished:
-        print("--------- THE GAME HAS FINISHED ---------")
-        game.finished = False
+        # print("--------- THE GAME HAS FINISHED ---------")
+        proxy_game.set_state(Game_over())
+        proxy_game.alert(screen, WIDHT, HEIGHT, Subscriber_end_game_alert)
+
         game.playing_turn = False
         game.player_turn = ""
         
