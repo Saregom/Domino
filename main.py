@@ -62,11 +62,18 @@ proxy_game = Proxy_game()
 
 game.create_tiles()
 game.distribute_tiles()
+proxy_game.add_observer(Subsciber_alert())
+proxy_game.add_observer(Subscriber_end_game_alert())
 
 #---------------------- ubicar fichas de cada jugador (mano)
 def show_hand_tiles(tiles_list:List, height, is_bot):
+    len_list = len(tiles_list)
     pos_width = 190 #diferencia de posiciones de cada ficha en x
 
+    if len_list > 7:
+        for i in range(1, len_list-6):
+            pos_width += i*25
+        
     for tile in tiles_list:
         tile:Tile
         if is_bot:
@@ -76,7 +83,7 @@ def show_hand_tiles(tiles_list:List, height, is_bot):
         tile.set_vertical()
 
         pos_width -= 55
-        if not tile.removed: 
+        if not tile.removed:
             tile.draw(screen)
             
 #---------------------- mostrar fichas jugadas y fichas restantes (Pozo)
@@ -92,7 +99,7 @@ def show_tiles():
         tile.set_position(with_remaining_tiles, height_remaining_tiles)
         tile.set_vertical()
 
-        with_remaining_tiles += 10 
+        with_remaining_tiles += 15 
         height_remaining_tiles += 2
         if not tile.removed:
             tile.draw(screen)

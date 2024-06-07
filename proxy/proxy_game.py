@@ -7,7 +7,7 @@ from state.game_state import Game_state
 # Publisher del patron OBSERVER   Y   #Clase Context del patron STATE
 class Proxy_game(Interface_game):
     def __init__(self):
-        self.subscribers = [Subsciber_alert(), Subscriber_end_game_alert()]
+        self.subscribers = []
 
         self.alert_access_denied_alert = False
         self.player_need_tiles_alert = False
@@ -17,12 +17,10 @@ class Proxy_game(Interface_game):
         self.state: Game_state
 
     def add_observer(self, observer):
-        if observer not in self.subscribers:
-            self.subscribers.append(observer)
+        self.subscribers.append(observer)
 
     def remove_observer(self, observer):
-        if observer in self.subscribers:
-            self.subscribers.remove(observer)
+        self.subscribers.remove(observer)
             
     def verify_player(self, player_turn):
         if player_turn is "player": return True
