@@ -72,7 +72,7 @@ def show_hand_tiles(tiles_list:List, height, is_bot):
 
     if len_list > 7:
         for i in range(1, len_list-6):
-            pos_width += i*25
+            pos_width += 25
         
     for tile in tiles_list:
         tile:Tile
@@ -91,15 +91,15 @@ def show_tiles():
     game.left_sides = []
     game.right_sides = []
 
-    with_remaining_tiles = 24
+    width_remaining_tiles = 24
     height_remaining_tiles = HEIGHT-148
     for tile in game.remaining_tiles:
         tile = Image_decorator(tile)
         tile.set_image()
-        tile.set_position(with_remaining_tiles, height_remaining_tiles)
+        tile.set_position(width_remaining_tiles, height_remaining_tiles)
         tile.set_vertical()
 
-        with_remaining_tiles += 15 
+        width_remaining_tiles += 15 
         height_remaining_tiles += 2
         if not tile.removed:
             tile.draw(screen)
